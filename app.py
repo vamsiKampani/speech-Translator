@@ -92,6 +92,6 @@ def send_audio(filename):
 if __name__ == '__main__':
     if not os.path.exists('outputs'):
         os.makedirs('outputs')
-    app.run(debug=True)
+    app.run(debug=False)
 
 
