@@ -1,5 +1,5 @@
-SpeechRecognition
+Flask==2.3.3
 googletrans==4.0.0-rc1
-gtts
-pipwin
-pyaudio
+gTTS==2.2.4
+sounddevice
+scipy
