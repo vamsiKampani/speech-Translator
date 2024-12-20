@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech Translator</title>
+    <link rel="icon" type="png/img" href="https://res.cloudinary.com/dswdzotlp/image/upload/v1717687974/Khanda__28Sikh_Symbol_29_gen2n6.svg">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #da3737;
+            text-align:center
+        }
+        h1{
+            text-align: center;
+            color: white;
+        }
+        #startButton{
+            width: 20%;
+            height: 30px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        #startButton:hover{
+            transform: scale(1.2);
+            transition: all 1s ease-in-out;
+            box-shadow: 0 0 5px rgb(98, 7, 195),
+            0 0 25px rgb(110, 13, 228), 0 0 50px rgb(113, 15, 211),
+            0 0 100px black, 0 0 200px black;
+            background-color: black;
+            color: white;
+        }
+        #language{
+            width: 10%;
+            height: 20px;
+            border-radius: 10px;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+        #translatedText {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #333;
+        }
+        #audioBtn {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Speech Translator</h1>
+    <label for="language">Choose Target Language: </label>
+    <select id="language">
+        <option value="Hindi">Hindi</option>
+        <option value="Telugu">Telugu</option>
+        <option value="Kannada">Kannada</option>
+        <option value="Tamil">Tamil</option>
+        <option value="Malayalam">Malayalam</option>
+        <option value="Bengali">Bengali</option>
+    </select>
+    <br><br>
+    <button id="startButton">Start Speech</button>
+
+    <div id="output">
+        <p><strong>Recognized Text:</strong></p>
+        <p id="recognizedText">Waiting for speech...</p>
+
+        <p><strong>Translated Text:</strong></p>
+        <p id="translatedText">Waiting for translation...</p>
+
+        <button id="audioBtn" disabled>Play Translated Audio</button>
+    </div>
+
+    <script>
+        document.getElementById('startButton').addEventListener('click', startSpeechRecognition);
+
+        async function startSpeechRecognition() {
+            const language = document.getElementById('language').value;
+            const response = await fetch('/translate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ targetLanguage: language }),
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById('recognizedText').textContent = data.recognizedText;
+            document.getElementById('translatedText').textContent = data.translatedText;
+
+            const audioBtn = document.getElementById('audioBtn');
+            audioBtn.disabled = false;
+            audioBtn.addEventListener('click', () => {
+                const audio = new Audio(data.audioUrl);
+                audio.play();
+            });
+        }
+    </script>
+</body>
+</html>
