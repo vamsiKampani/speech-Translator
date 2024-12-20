@@ -1,13 +1,15 @@
 from flask import Flask, request, render_template, jsonify, send_from_directory
+import sounddevice as sd
+from scipy.io.wavfile import write
 import speech_recognition as spr
 from googletrans import Translator
 from gtts import gTTS
 import os
+import tempfile
 
 app = Flask(__name__, static_folder='outputs')
 
 recog1 = spr.Recognizer()
-mc = spr.Microphone()
 
 language_map = {
     'Hindi': 'hi',
@@ -18,23 +20,43 @@ language_map = {
     'Bengali': 'bn'
 }
 
-def recognize_speech(recog, source):
+def recognize_speech(recog):
     try:
-        print("Adjusting for ambient noise...")
-        recog.adjust_for_ambient_noise(source, duration=0.2)
+        print("Recording audio using SoundDevice...")
+        
+        # Recording parameters
+        duration = 10  # seconds
+        samplerate = 44100  # Sample rate in Hz
+        
+        # Record audio
         print("Listening...")
-        audio = recog.listen(source, timeout=20, phrase_time_limit=30)
+        audio = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=1, dtype='int16')
+        sd.wait()  # Wait until recording is finished
+        
+        # Save audio to a temporary file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+            write(temp_file.name, samplerate, audio)
+            temp_wav_path = temp_file.name
+        
         print("Processing audio...")
-        recognized_text = recog.recognize_google(audio)
+        
+        # Process the recorded audio with speech_recognition
+        with spr.AudioFile(temp_wav_path) as source:
+            audio_data = recog.record(source)
+            recognized_text = recog.recognize_google(audio_data)
+        
+        # Cleanup temporary file
+        os.remove(temp_wav_path)
         return recognized_text
+    
     except spr.UnknownValueError:
         print("Google Speech Recognition could not understand the audio.")
         return None
     except spr.RequestError as e:
         print(f"Request error: {e}")
         return None
-    except spr.WaitTimeoutError:
-        print("Speech input timed out.")
+    except Exception as e:
+        print(f"Error during speech recognition: {e}")
         return None
 
 @app.route('/')
@@ -52,9 +74,8 @@ def translate_speech():
     target_language_code = language_map[target_language_input]
 
     try:
-        with mc as source:
-            print("Listening for speech input...")
-            MyText = recognize_speech(recog1, source)
+        print("Listening for speech input...")
+        MyText = recognize_speech(recog1)
 
         if not MyText:
             return jsonify({"error": "No speech input detected. Please try again."}), 400
@@ -93,5 +114,6 @@ if __name__ == '__main__':
     if not os.path.exists('outputs'):
         os.makedirs('outputs')
     app.run(debug=False)
+
 
 
